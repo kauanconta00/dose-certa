@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmácia: A Dose Certa</title>
+<style>
+/* ============================================================
+   FARMÁCIA: A DOSE CERTA
+   Arquivo único. Roda com duplo clique, sem instalar nada.
+   Para publicar: suba index.html + a pasta assets/ num host
+   estático (GitHub Pages, Netlify, Cloudflare Pages).
+   As cores e medidas ficam todas nas variáveis abaixo.
+   ============================================================ */
+:root{
+  --verde-escuro:#0d3b36;
+  --verde:#15524b;
+  --verde-claro:#1d6b62;
+  --creme:#f6ecd9;
+  --creme-escuro:#e4d5ba;
+  --madeira:#8a5a30;
+  --madeira-escura:#5e3c1e;
+  --ouro:#e3a92f;
+  --tinta:#23201b;
+  --tinta-fraca:#6b6358;
+  --ok:#3f8f4a;
+  --atencao:#c98a1b;
+  --alerta:#c25a1c;
+  --grave:#a32c22;
+  --c-pressorico:#c0392b;
+  --c-cardiaco:#8e44ad;
+  --c-diuretico:#2a6fb0;
+  --c-ansiolitico:#128c7e;
+  --c-antidepressivo:#cf8a12;
+  --borda:3px solid var(--tinta);
+  --sombra:5px 5px 0 rgba(10,30,28,.35);
+  --fonte:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--fonte);
+  color:var(--tinta);
+  background:var(--verde-escuro);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.06) 0 2px,transparent 2px 4px);
+  display:flex;flex-direction:column;align-items:center;
+  padding:12px;gap:12px;
+  -webkit-font-smoothing:antialiased;
+}
+img{image-rendering:pixelated;display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.app{width:100%;max-width:1040px;display:flex;flex-direction:column;gap:12px}
+
+/* ---------- barra superior ---------- */
+.topo{
+  background:var(--verde);border:var(--borda);box-shadow:var(--sombra);
+  border-radius:10px;padding:10px 14px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;color:var(--creme);
+}
+.topo h1{font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;margin-right:auto}
+.topo h1 small{display:block;font-size:.68rem;opacity:.75;letter-spacing:.08em;font-weight:400}
+.pino{display:flex;align-items:center;gap:6px;font-weight:700;font-size:.95rem;
+  background:rgba(0,0,0,.25);padding:5px 10px;border-radius:999px}
+.pino span{font-weight:400;opacity:.8;font-size:.78rem}
+.btn-loja{background:var(--ouro);color:var(--tinta);font-weight:800;font-size:.8rem;
+  text-transform:uppercase;letter-spacing:.06em;padding:8px 14px;border-radius:8px;
+  border:3px solid var(--tinta);box-shadow:3px 3px 0 rgba(0,0,0,.3)}
+.btn-loja:active{transform:translate(2px,2px);box-shadow:1px 1px 0 rgba(0,0,0,.3)}
+
+/* ---------- cenário ---------- */
+.cena{
+  position:relative;border:var(--borda);border-radius:10px;overflow:hidden;
+  box-shadow:var(--sombra);background:var(--verde-claro);
+  min-height:190px;display:flex;align-items:flex-end;justify-content:center;
+}
+.cena .fundo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cena .paciente{position:relative;height:170px;z-index:2;margin-bottom:6px}
+.cena .balcao{position:absolute;bottom:0;left:0;width:100%;z-index:3}
+.falta-arte{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  background:repeating-linear-gradient(45deg,#2b2b2b,#2b2b2b 8px,#3a3a3a 8px,#3a3a3a 16px);
+  color:#fff;font-size:.6rem;letter-spacing:.05em;padding:6px;
+  border:2px dashed rgba(255,255,255,.5);
+}
+.bandeja{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:9px;align-items:flex-end;z-index:4;pointer-events:none;
+}
+.bandeja .cx{position:relative;animation:pousar .18s ease-out}
+.bandeja img,.bandeja .falta-arte{width:52px;height:62px;border-radius:3px;
+  filter:drop-shadow(0 4px 0 rgba(0,0,0,.28))}
+.bandeja .etiqueta{
+  position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+  background:var(--creme);border:2px solid var(--tinta);border-radius:999px;
+  padding:1px 6px;white-space:nowrap;
+}
+@keyframes pousar{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.bolha{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:var(--creme);border:var(--borda);border-radius:10px;
+  padding:8px 12px;font-size:.84rem;max-width:min(520px,88%);z-index:4;
+  box-shadow:3px 3px 0 rgba(0,0,0,.3);line-height:1.35;
+}
+
+/* ---------- cartões ---------- */
+.painel{background:var(--creme);border:var(--borda);border-radius:10px;box-shadow:var(--sombra);padding:14px}
+.painel > h2{
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tinta-fraca);
+  border-bottom:2px solid var(--creme-escuro);padding-bottom:6px;margin-bottom:10px;
+}
+.grade{display:grid;grid-template-columns:1fr 1.25fr;gap:12px;align-items:start}
+@media (max-width:760px){.grade{grid-template-columns:1fr}}
+
+/* ---------- ficha do paciente ---------- */
+.ficha dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.88rem}
+.ficha dt{font-weight:700;color:var(--tinta-fraca)}
+.ficha .queixas{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.sinal{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:4px 9px;border-radius:999px;border:2px solid var(--tinta);background:#fff}
+.flag{font-size:.74rem;font-weight:700;padding:4px 9px;border-radius:999px;
+  border:2px solid var(--grave);color:var(--grave);background:#fff}
+.ficha .fala{margin-top:10px;font-style:italic;font-size:.86rem;color:var(--tinta-fraca);
+  border-left:4px solid var(--creme-escuro);padding-left:10px;line-height:1.4}
+
+/* ---------- prateleira ---------- */
+.prateleira{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.frasco{
+  background:#fff;border:var(--borda);border-radius:8px;padding:6px 5px 7px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;
+  box-shadow:3px 3px 0 rgba(0,0,0,.18);transition:transform .08s;position:relative;
+}
+.frasco:active{transform:translate(2px,2px)}
+.frasco .img,.frasco img{width:44px;height:52px;border-radius:4px}
+.frasco b{font-size:.74rem;line-height:1.1}
+.frasco em{font-size:.6rem;font-style:normal;text-transform:uppercase;letter-spacing:.04em;
+  color:#fff;padding:2px 6px;border-radius:999px;font-weight:800}
+.frasco.escolhido{outline:4px solid var(--ouro);outline-offset:1px}
+.frasco:disabled{opacity:.4;cursor:not-allowed}
+.cl-pressorico em{background:var(--c-pressorico)}
+.cl-cardiaco em{background:var(--c-cardiaco)}
+.cl-diuretico em{background:var(--c-diuretico)}
+.cl-ansiolitico em{background:var(--c-ansiolitico)}
+.cl-antidepressivo em{background:var(--c-antidepressivo)}
+
+/* ---------- bandeja da receita ---------- */
+.receita{display:flex;flex-direction:column;gap:8px}
+.linha{
+  display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;
+  background:#fff;border:var(--borda);border-radius:8px;padding:8px 10px;
+}
+@media (max-width:620px){.linha{grid-template-columns:1fr auto;gap:6px}}
+.linha .nome{font-weight:700;font-size:.86rem}
+.linha .nome small{display:block;font-weight:400;font-size:.68rem;color:var(--tinta-fraca)}
+.opcoes{display:flex;border:2px solid var(--tinta);border-radius:6px;overflow:hidden}
+.opcoes button{font-size:.7rem;font-weight:700;padding:5px 8px;background:#fff;
+  border-right:2px solid var(--tinta);text-transform:uppercase;letter-spacing:.03em}
+.opcoes button:last-child{border-right:none}
+.opcoes button[aria-pressed="true"]{background:var(--tinta);color:var(--creme)}
+.tirar{font-size:1.1rem;font-weight:800;color:var(--grave);padding:0 6px;line-height:1}
+.vazio{font-size:.86rem;color:var(--tinta-fraca);text-align:center;padding:18px 8px;
+  border:3px dashed var(--creme-escuro);border-radius:8px}
+.servir{
+  width:100%;margin-top:4px;background:var(--ok);color:#fff;font-weight:800;
+  font-size:1rem;text-transform:uppercase;letter-spacing:.1em;padding:14px;
+  border:var(--borda);border-radius:10px;box-shadow:4px 4px 0 rgba(0,0,0,.3);
+}
+.servir:active{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.servir:disabled{background:var(--creme-escuro);color:var(--tinta-fraca);box-shadow:none}
+.aviso-pc{
+  margin-top:8px;font-size:.8rem;background:#fff5d6;border:2px solid var(--atencao);
+  border-radius:8px;padding:8px 10px;line-height:1.35;
+}
+.aviso-pc b{color:var(--alerta)}
+
+/* ---------- sobreposições ---------- */
+.tela{
+  position:fixed;inset:0;background:rgba(6,24,22,.88);z-index:50;
+  display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto;
+}
+.tela[hidden]{display:none}
+.caixa{
+  background:var(--creme);border:var(--borda);border-radius:12px;box-shadow:var(--sombra);
+  width:100%;max-width:620px;max-height:100%;overflow:auto;
+}
+.caixa header{padding:14px 16px;border-bottom:var(--borda);display:flex;align-items:center;gap:10px}
+.caixa header h2{font-size:1.1rem;text-transform:uppercase;letter-spacing:.06em}
+.caixa header .selo{width:46px;height:46px;border-radius:8px;flex:0 0 auto}
+.caixa .corpo{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.caixa footer{padding:12px 16px;border-top:2px solid var(--creme-escuro);display:flex;gap:8px;flex-wrap:wrap}
+.caixa footer button{flex:1;min-width:140px;background:var(--verde);color:var(--creme);
+  font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:.82rem;
+  padding:12px;border:var(--borda);border-radius:8px;box-shadow:3px 3px 0 rgba(0,0,0,.3)}
+.caixa footer button.secundario{background:var(--creme-escuro);color:var(--tinta)}
+.t-cura header{background:#dff2e0}
+.t-parcial header{background:#fdf2d6}
+.t-grave header{background:#f6d9cf}
+.t-obito header{background:#e8d2cf}
+
+/* ---------- blocos de explicação ---------- */
+.achado{border-left:6px solid var(--tinta-fraca);background:#fff;border-radius:6px;
+  padding:9px 11px;font-size:.87rem;line-height:1.42}
+.achado b{display:block;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.achado .mec{display:block;margin-top:5px;font-size:.81rem;color:var(--tinta-fraca)}
+.a-bom{border-left-color:var(--ok)} .a-bom b{color:var(--ok)}
+.a-atencao{border-left-color:var(--atencao)} .a-atencao b{color:var(--atencao)}
+.a-alerta{border-left-color:var(--alerta)} .a-alerta b{color:var(--alerta)}
+.a-grave{border-left-color:var(--grave)} .a-grave b{color:var(--grave)}
+.caixa-dinheiro{font-size:1.5rem;font-weight:800;text-align:center;padding:10px;
+  background:#fff;border:var(--borda);border-radius:8px}
+.caixa-dinheiro.neg{color:var(--grave)}
+.caixa-dinheiro small{display:block;font-size:.72rem;font-weight:400;color:var(--tinta-fraca);
+  text-transform:uppercase;letter-spacing:.08em}
+
+/* ---------- loja ---------- */
+.itens{display:flex;flex-direction:column;gap:9px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;
+  background:#fff;border:var(--borda);border-radius:8px;padding:9px 11px}
+.item .img,.item img{width:46px;height:46px;border-radius:6px}
+.item b{font-size:.9rem} .item p{font-size:.78rem;color:var(--tinta-fraca);line-height:1.35;margin-top:2px}
+.item button{background:var(--ouro);color:var(--tinta);border:3px solid var(--tinta);
+  border-radius:8px;font-weight:800;font-size:.78rem;padding:9px 11px;white-space:nowrap}
+.item button:disabled{background:var(--creme-escuro);color:var(--tinta-fraca);cursor:not-allowed}
+.item.comprado{opacity:.6}
+
+/* ---------- abertura ---------- */
+.abertura{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding:8px}
+.abertura h2{font-size:1.7rem;letter-spacing:.02em;line-height:1.1}
+.abertura p{font-size:.92rem;line-height:1.5;max-width:460px;color:var(--tinta-fraca)}
+.abertura ol{text-align:left;font-size:.88rem;line-height:1.6;padding-left:22px;max-width:460px}
+.rodape{font-size:.72rem;color:rgba(246,236,217,.55);text-align:center;line-height:1.5;max-width:620px}
+.rodape b{color:rgba(246,236,217,.8)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topo">
+    <h1>Farmácia: A Dose Certa<small id="nome-farmacia">Farmacinha do Bairro — Nível 1</small></h1>
+    <div class="pino" id="pino-dinheiro">R$ 0 <span>caixa</span></div>
+    <div class="pino" id="pino-fase">Fase 1 <span>de 4</span></div>
+    <button class="btn-loja" id="abrir-loja">Loja</button>
+  </div>
+
+  <div class="cena" id="cena">
+    <img class="fundo" id="arte-fundo" alt="">
+    <div class="bolha" id="bolha">Bem-vindo.</div>
+    <img class="paciente" id="arte-paciente" alt="Paciente no balcão">
+    <img class="balcao" id="arte-balcao" alt="">
+  </div>
+
+  <div class="grade">
+    <section class="painel ficha">
+      <h2>Ficha do paciente</h2>
+      <dl id="ficha-dados"></dl>
+      <div class="queixas" id="ficha-queixas"></div>
+        </section>
+
+    <section class="painel">
+      <h2 id="titulo-prateleira">Prateleira</h2>
+      <div class="prateleira" id="prateleira"></div>
+      <h2 style="margin-top:14px">Receita <span id="contador-receita"></span></h2>
+      <div class="receita" id="receita"></div>
+      <div id="aviso-computador"></div>
+      <button class="servir" id="servir" disabled>Servir</button>
+    </section>
+  </div>
+
+  <p class="rodape">
+    <b>Trabalho acadêmico.</b> Os desfechos deste jogo são simplificações didáticas sobre
+    prescrição racional e não servem de orientação de tratamento. Cada regra deve ser conferida
+    no Bulário Eletrônico da ANVISA e numa base de interações antes de entrar no trabalho escrito.
+  </p>
+</div>
+
+<div class="tela" id="tela-resultado" hidden><div class="caixa" id="caixa-resultado"></div></div>
+<div class="tela" id="tela-loja" hidden><div class="caixa" id="caixa-loja"></div></div>
+<div class="tela" id="tela-abertura"><div class="caixa"><div class="corpo abertura" id="corpo-abertura"></div></div></div>
+
+<script>
+/* ============================================================
+   1. DADOS DO JOGO
+   Segue o planejamento original: 10 remédios, 2 por classe,
+   combinações vermelhas que matam, verdes que salvam,
+   e a Fórmula Mestra como fase final.
+   ============================================================ */
+
+const PROBLEMAS = {
+  pressao:   {nome:'Pressão alta',       cor:'#c0392b'},
+  ritmo:     {nome:'Coração acelerado',  cor:'#8e44ad'},
+  inchaco:   {nome:'Inchaço nas pernas', cor:'#2a6fb0'},
+  ansiedade: {nome:'Ansiedade',          cor:'#128c7e'},
+  depressao: {nome:'Depressão',          cor:'#cf8a12'},
+};
+
+/* A prateleira final: 10 remédios, 2 de cada classe. */
+const FARMACOS = {
+  losartana:       {nome:'Losartana',       classe:'pressorico',     rotulo:'Pressórico',
+                    acao:'Baixa a pressão.', arte:'frasco-losartana.png'},
+  enalapril:       {nome:'Enalapril',       classe:'pressorico',     rotulo:'Pressórico',
+                    acao:'Baixa a pressão.', arte:'frasco-enalapril.png'},
+  digoxina:        {nome:'Digoxina',        classe:'cardiaco',       rotulo:'Cardíaco',
+                    acao:'Fortalece o coração. Só em dose baixa.', arte:'frasco-digoxina.png'},
+  metoprolol:      {nome:'Metoprolol',      classe:'cardiaco',       rotulo:'Cardíaco',
+                    acao:'Controla o batimento.', arte:'frasco-metoprolol.png'},
+  furosemida:      {nome:'Furosemida',      classe:'diuretico',      rotulo:'Diurético',
+                    acao:'Tira o inchaço, faz urinar muito.', arte:'frasco-furosemida.png'},
+  espironolactona: {nome:'Espironolactona', classe:'diuretico',      rotulo:'Diurético',
+                    acao:'Tira o inchaço, segura o potássio.', arte:'frasco-espironolactona.png'},
+  diazepam:        {nome:'Diazepam',        classe:'ansiolitico',    rotulo:'Ansiolítico',
+                    acao:'Acalma, dá sono.', arte:'frasco-diazepam.png'},
+  clonazepam:      {nome:'Clonazepam',      classe:'ansiolitico',    rotulo:'Ansiolítico',
+                    acao:'Acalma, dá sono forte.', arte:'frasco-clonazepam.png'},
+  fluoxetina:      {nome:'Fluoxetina',      classe:'antidepressivo', rotulo:'Antidepressivo',
+                    acao:'Tira a depressão.', arte:'frasco-fluoxetina.png'},
+  amitriptilina:   {nome:'Amitriptilina',   classe:'antidepressivo', rotulo:'Antidepressivo',
+                    acao:'Tira a depressão, mas mexe no coração.', arte:'frasco-amitriptilina.png'},
+};
+
+/* VERMELHO — as seis combinações que matam o Miguel.
+   O texto de "mecanismo" explica por quê, para entrar na parte teórica do trabalho. */
+const VERMELHOS = [
+  { par:['furosemida','digoxina'], titulo:'Furosemida + Digoxina',
+    morte:'O coração do Miguel entra em arritmia e para.',
+    mecanismo:'A furosemida faz o corpo perder potássio. Com o potássio baixo, a digoxina se '+
+      'liga com mais força à bomba de sódio e potássio do coração e vira tóxica, mesmo na dose '+
+      'de sempre. O resultado é arritmia grave.' },
+  { par:['enalapril','espironolactona'], titulo:'Enalapril + Espironolactona',
+    morte:'O potássio sobe demais e o coração para.',
+    mecanismo:'Os dois seguram potássio por caminhos diferentes: o enalapril corta a aldosterona '+
+      'e a espironolactona bloqueia a ação dela no rim. Somados, levam à hipercalemia, que '+
+      'desorganiza o ritmo do coração.' },
+  { par:['losartana','enalapril'], titulo:'Losartana + Enalapril',
+    morte:'A pressão despenca e o Miguel não se recupera.',
+    mecanismo:'São dois bloqueadores do mesmo eixo hormonal, um no receptor e outro na enzima. '+
+      'O duplo bloqueio não traz benefício e multiplica o risco de hipotensão, hipercalemia e '+
+      'lesão renal aguda. É uma associação contraindicada.' },
+  { par:['metoprolol','digoxina'], titulo:'Metoprolol + Digoxina',
+    morte:'O coração desacelera até parar.',
+    mecanismo:'Os dois freiam a condução elétrica no nó atrioventricular. Juntos, o efeito se '+
+      'soma e o batimento pode cair a ponto de não sustentar a circulação.' },
+  { par:['diazepam','clonazepam'], titulo:'Diazepam + Clonazepam',
+    morte:'O Miguel para de respirar.',
+    mecanismo:'São dois benzodiazepínicos, o mesmo mecanismo em dobro. Não há ganho no '+
+      'tratamento, só soma de sedação e de depressão do centro respiratório.' },
+  { par:['fluoxetina','amitriptilina'], titulo:'Fluoxetina + Amitriptilina',
+    morte:'Síndrome serotoninérgica: febre alta, rigidez e colapso.',
+    mecanismo:'Os dois aumentam a serotonina. Ainda por cima, a fluoxetina bloqueia a enzima '+
+      'CYP2D6, que é justamente a que elimina a amitriptilina — os níveis do tricíclico sobem '+
+      'muito e somam toxicidade cardíaca.' },
+];
+
+/* AMARELO — pode, mas com cuidado. */
+const AMARELOS = [
+  { id:'digoxina-dose',
+    quando:(ids,rec) => rec.some(l => l.id === 'digoxina' && l.dose !== 'baixa'),
+    titulo:'Digoxina acima da dose baixa',
+    texto:'O Miguel desmaia com intoxicação digitálica.',
+    mecanismo:'A digoxina tem janela terapêutica estreita: a dose que trata e a dose que '+
+      'intoxica são quase a mesma. Fora da dose baixa, ela vira veneno.' },
+  { id:'amitriptilina-coracao',
+    quando:(ids,rec,caso) => ids.includes('amitriptilina') && caso.coracao,
+    titulo:'Amitriptilina em quem tem problema no coração',
+    texto:'O Miguel passa mal, com o coração descompensado.',
+    mecanismo:'A amitriptilina interfere na condução cardíaca e derruba a pressão ao levantar. '+
+      'Num coração já doente, é risco desnecessário.' },
+];
+
+/* Horário: muda o conforto do Miguel. */
+const HORARIO_IDEAL = {
+  fluoxetina:'manha', furosemida:'manha',
+  diazepam:'noite', clonazepam:'noite', amitriptilina:'noite',
+};
+const MOTIVO_HORARIO = {
+  fluoxetina:'A fluoxetina de noite tira o sono do Miguel.',
+  furosemida:'Diurético à noite faz o Miguel levantar a noite toda para urinar.',
+  diazepam:'Calmante de manhã deixa o Miguel sonolento o dia inteiro.',
+  clonazepam:'Calmante de manhã deixa o Miguel sonolento o dia inteiro.',
+  amitriptilina:'A amitriptilina de manhã derruba o Miguel de sono durante o dia.',
+};
+
+/* AS 5 FICHAS DO MIGUEL, cada uma com a resposta certa.
+   gabarito = o que o jogador precisa servir para curar. */
+const CASOS = [
+  { fase:1, nome:'Miguel, 45 anos', corpo:'adulto', premio:80,
+    dados:{Idade:'45 anos', Pressão:'152/96 mmHg', Pulso:'78 bpm', Coração:'sem problemas'},
+    problemas:['pressao'], coracao:false,
+    gabarito:{losartana:{dose:'media', horario:'manha'}},
+    fala:'Descobri num exame que minha pressão está alta. Fora isso não sinto nada.',
+    licao:'Só a pressão alta, nada mais: um remédio resolve. Dois pressóricos juntos é a '+
+      'combinação vermelha mais fácil de cair.' },
+
+  { fase:2, nome:'Miguel, 57 anos', corpo:'maduro', premio:100,
+    dados:{Idade:'57 anos', Pressão:'158/94 mmHg', Pulso:'80 bpm', Pernas:'inchadas'},
+    problemas:['pressao','inchaco'], coracao:false,
+    gabarito:{losartana:{dose:'media', horario:'manha'},
+              furosemida:{dose:'media', horario:'manha'}},
+    fala:'A pressão subiu e minhas pernas vivem inchadas no fim do dia.',
+    licao:'Combinação verde: um baixa a pressão, o outro tira o inchaço, e eles se ajudam.' },
+
+  { fase:2, nome:'Miguel, 63 anos', corpo:'maduro', premio:200,
+    dados:{Idade:'63 anos', Pressão:'160/98 mmHg', Pulso:'104 bpm', Pernas:'muito inchadas'},
+    problemas:['pressao','ritmo','inchaco'], coracao:true,
+    gabarito:{enalapril:{dose:'media', horario:'manha'},
+              furosemida:{dose:'media', horario:'manha'},
+              metoprolol:{dose:'baixa', horario:'manha'}},
+    fala:'O médico falou que meu coração está fraco. Subo escada e fico sem ar.',
+    licao:'É o combo do coração: pressão, inchaço e batimento, cada um com seu remédio. O '+
+      'metoprolol entra em dose baixa para não derrubar demais o batimento.' },
+
+  { fase:3, nome:'Miguel, 38 anos', corpo:'adulto', premio:120,
+    dados:{Idade:'38 anos', Pressão:'120/78 mmHg', Pulso:'88 bpm', Sono:'ruim há meses'},
+    problemas:['depressao','ansiedade'], coracao:false,
+    gabarito:{fluoxetina:{dose:'media', horario:'manha'},
+              clonazepam:{dose:'media', horario:'noite'}},
+    fala:'Perdi a vontade de tudo, e à noite a ansiedade não me deixa dormir.',
+    licao:'Depressão e ansiedade juntas: um remédio para cada uma. A fluoxetina de manhã e o '+
+      'calmante à noite, cada um no horário em que faz falta.' },
+
+  { fase:4, nome:'Miguel, 70 anos — A FÓRMULA MESTRA', corpo:'idoso', premio:500, chefao:true,
+    dados:{Idade:'70 anos', Pressão:'162/96 mmHg', Pulso:'106 bpm', Pernas:'inchadas',
+           Humor:'deprimido e ansioso', Coração:'sem problema estrutural'},
+    problemas:['pressao','ritmo','inchaco','depressao','ansiedade'], coracao:false,
+    gabarito:{losartana:{dose:'media', horario:'manha'},
+              metoprolol:{dose:'baixa', horario:'manha'},
+              furosemida:{dose:'baixa', horario:'manha'},
+              fluoxetina:{dose:'media', horario:'manha'},
+              clonazepam:{dose:'baixa', horario:'noite'}},
+    fala:'Agora é tudo junto: a pressão, o coração disparado, as pernas e a cabeça.',
+    licao:'A Fórmula Mestra: um remédio de cada classe, fugindo de todos os vermelhos. Com dez '+
+      'remédios na prateleira, a polifarmácia com cinco classes é possível, mas só com escolha '+
+      'racional, doses baixas e horários separados.' },
+];
+
+const LOJA = [
+  { id:'geladeira', nome:'Geladeira de vacinas', preco:120, arte:'loja-geladeira.png',
+    desc:'Mais movimento na farmácia: cada cura rende R$ 15 a mais.' },
+  { id:'prateleira', nome:'Prateleira nova', preco:200, arte:'loja-prateleira.png',
+    desc:'Cabe mais remédio no balcão: a receita aceita 1 a mais.' },
+  { id:'computador', nome:'Computador', preco:320, arte:'loja-computador.png',
+    desc:'Avisa na tela quando a receita tem uma combinação vermelha, antes de você servir.' },
+  { id:'atendente', nome:'Atendente', preco:260, arte:'loja-atendente.png',
+    desc:'Ajuda na conferência: a receita aceita mais 1 remédio.' },
+  { id:'rede', nome:'Virar rede de farmácias', preco:600, arte:'loja-rede.png',
+    desc:'Sua farmácia vira uma rede. Todos os prêmios aumentam 25%.' },
+];
+
+const NIVEIS = [
+  {nome:'Farmacinha do Bairro'},
+  {nome:'Drogaria do Miguel'},
+  {nome:'Drogaria Top'},
+  {nome:'Rede A Dose Certa'},
+];
+
+/* ============================================================
+   2. MOTOR DE AVALIAÇÃO
+   Ordem: vermelho mata > amarelo derruba > compara com o gabarito.
+   ============================================================ */
+
+function vermelhosNaReceita(ids){
+  return VERMELHOS.filter(v => ids.includes(v.par[0]) && ids.includes(v.par[1]));
+}
+
+function avaliar(caso, receita, estado){
+  const ids = receita.map(l => l.id);
+  const achados = [];
+
+  /* 1. VERMELHO: mata na hora */
+  const mortais = vermelhosNaReceita(ids);
+  if(mortais.length){
+    mortais.forEach(v => achados.push({nivel:'grave', titulo:v.titulo,
+      texto:v.morte, mecanismo:v.mecanismo}));
+    return {tier:'obito', achados, dinheiro:0, licao:caso.licao};
+  }
+
+  /* 2. AMARELO: passa mal */
+  const amarelos = AMARELOS.filter(a => a.quando(ids, receita, caso));
+  amarelos.forEach(a => achados.push({nivel:'alerta', titulo:a.titulo,
+    texto:a.texto, mecanismo:a.mecanismo}));
+
+  /* 3. Compara com a resposta certa da ficha */
+  const certos = Object.keys(caso.gabarito);
+  const faltando = certos.filter(id => !ids.includes(id));
+  const sobrando = ids.filter(id => !certos.includes(id));
+  const doseErrada = [], doseAlta = [], horarioErrado = [];
+
+  for(const l of receita){
+    const g = caso.gabarito[l.id];
+    if(!g) continue;
+    if(l.dose === 'alta')       doseAlta.push(FARMACOS[l.id].nome);
+    else if(l.dose !== g.dose)  doseErrada.push(`${FARMACOS[l.id].nome} precisava de dose ${g.dose}.`);
+    if(g.horario !== l.horario && MOTIVO_HORARIO[l.id]) horarioErrado.push(MOTIVO_HORARIO[l.id]);
+  }
+
+  if(faltando.length) achados.push({nivel:'atencao', titulo:'Faltou tratar',
+    texto:'A receita não cobriu: ' + faltando.map(id => FARMACOS[id].nome).join(', ') + '.',
+    mecanismo:'Cada queixa da ficha precisa do seu remédio. O que fica sem tratamento continua lá.'});
+
+  if(sobrando.length) achados.push({nivel:'alerta', titulo:'Remédio a mais',
+    texto:sobrando.map(id => FARMACOS[id].nome).join(', ') + ' não era necessário nesta ficha.',
+    mecanismo:'Remédio sem necessidade não ajuda e ainda abre a porta para interação e efeito '+
+      'adverso. É o erro mais comum da polifarmácia.'});
+
+  if(doseAlta.length) achados.push({nivel:'alerta', titulo:'Dose alta demais',
+    texto:doseAlta.join(', ') + ' em dose alta: o Miguel passa mal.',
+    mecanismo:'Dose pouca não cura, dose certa cura, dose demais intoxica. Dose alta não é '+
+      'resposta mais forte, é efeito adverso.'});
+
+  if(doseErrada.length) achados.push({nivel:'atencao', titulo:'Dose fora do ponto',
+    texto:doseErrada.join(' '), mecanismo:'Dose baixa demais não chega a tratar a queixa.'});
+
+  if(horarioErrado.length) achados.push({nivel:'atencao', titulo:'Horário desconfortável',
+    texto:horarioErrado.join(' '),
+    mecanismo:'O horário não muda a combinação entre os remédios: muda o conforto do Miguel, '+
+      'quando ele dorme, quando ele acorda e quando precisa ir ao banheiro.'});
+
+  /* 4. Desfecho */
+  const errosGraves = amarelos.length + sobrando.length + doseAlta.length;
+  let tier;
+  if(errosGraves)                              tier = 'grave';
+  else if(faltando.length || doseErrada.length) tier = 'parcial';
+  else                                          tier = 'cura';
+
+  if(tier === 'cura') achados.unshift({nivel:'bom', titulo:'Combinação verde',
+    texto:'Receita exata: tudo tratado, nas doses e nos horários certos.',
+    mecanismo:caso.licao});
+
+  /* 5. Dinheiro */
+  const mult = estado.itens.includes('rede') ? 1.25 : 1;
+  let dinheiro = 0;
+  if(tier === 'cura'){
+    dinheiro = Math.round(caso.premio * mult);
+    if(estado.itens.includes('geladeira')) dinheiro += 15;
+  }
+  else if(tier === 'parcial') dinheiro = 20;
+  else if(tier === 'grave')   dinheiro = -50;
+  dinheiro -= 10 * horarioErrado.length;
+
+  return {tier, achados, dinheiro, licao:caso.licao};
+}
+
+const TIERS = {
+  cura:    {titulo:'Miguel curado!',       selo:'ui-selo-otimo.png',
+            fala:'Obrigado! Já me sinto outra pessoa.'},
+  parcial: {titulo:'Miguel ficou enjoado',  selo:'ui-selo-parcial.png',
+            fala:'Melhorou um pouco, mas ainda não estou bom.'},
+  grave:   {titulo:'Miguel desmaiou',       selo:'ui-selo-alerta.png',
+            fala:'Passei muito mal com essa receita.'},
+  obito:   {titulo:'Miguel morreu',         selo:'ui-selo-grave.png',
+            fala:'...'},
+};
+
+/* ============================================================
+   3. ESTADO, TELAS E LAÇO DE JOGO
+   ============================================================ */
+
+const CLASSES_POR_FASE = {
+  1:['pressorico'],
+  2:['pressorico','cardiaco','diuretico'],
+  3:['pressorico','cardiaco','diuretico','ansiolitico','antidepressivo'],
+  4:['pressorico','cardiaco','diuretico','ansiolitico','antidepressivo'],
+};
+const CHAVE_SALVA = 'dose-certa-v1';
+
+let estado = {dinheiro:0, itens:[], caso:0};
+let receita = [];
+
+function salvar(){ try{ localStorage.setItem(CHAVE_SALVA, JSON.stringify(estado)); }catch(e){} }
+function carregar(){
+  try{
+    const bruto = localStorage.getItem(CHAVE_SALVA);
+    if(bruto){ const s = JSON.parse(bruto);
+      if(typeof s.dinheiro === 'number' && Array.isArray(s.itens)) estado = s; }
+  }catch(e){}
+}
+
+/* Sprite ausente vira um retângulo com o nome do arquivo esperado. */
+function semArte(el){
+  const d = document.createElement('div');
+  d.className = el.className + ' falta-arte';
+  d.textContent = el.dataset.rotulo || 'arte';
+  el.replaceWith(d);
+}
+window.semArte = semArte;
+const arte = (arquivo, rotulo, classe) =>
+  `<img src="assets/${arquivo}" alt="" class="${classe}" data-rotulo="${rotulo}" onerror="semArte(this)">`;
+
+const casoAtual = () => CASOS[estado.caso];
+const temItem   = id => estado.itens.includes(id);
+const limite = () => Math.min(5, 3 + (temItem('prateleira')?1:0) + (temItem('atendente')?1:0));
+const nivelIndex = () => temItem('rede') ? 3
+  : (temItem('computador') || temItem('atendente')) ? 2
+  : (temItem('geladeira') || temItem('prateleira')) ? 1 : 0;
+
+/* ---------- barra superior e cenário ---------- */
+function pintarTopo(){
+  const n = NIVEIS[nivelIndex()];
+  document.getElementById('nome-farmacia').textContent = `${n.nome} — Nível ${nivelIndex()+1}`;
+  document.getElementById('pino-dinheiro').innerHTML = `R$ ${estado.dinheiro} <span>caixa</span>`;
+  document.getElementById('pino-fase').innerHTML =
+    `Fase ${casoAtual().fase} <span>· caso ${estado.caso+1} de ${CASOS.length}</span>`;
+}
+
+function pintarCena(expressao){
+  const c = casoAtual();
+  const nivel = nivelIndex()+1;
+  document.getElementById('cena').innerHTML =
+    arte(`bg-nivel${nivel}.png`, `bg-nivel${nivel}.png`, 'fundo') +
+    `<div class="bolha" id="bolha">${expressao ? TIERS[expressao].fala : c.fala}</div>` +
+    arte(`miguel-${c.corpo}-${expressao ? ({cura:'feliz', parcial:'enjoado',
+      grave:'mal', obito:'obito'})[expressao] : 'neutro'}.png`,
+      `miguel-${c.corpo}`, 'paciente') +
+    arte('balcao.png', 'balcao.png', 'balcao') +
+    '<div class="bandeja" id="bandeja"></div>';
+  pintarBandeja();
+}
+
+/* Os remédios escolhidos ficam sobre o balcão, à vista do Miguel. */
+function pintarBandeja(){
+  const alvo = document.getElementById('bandeja');
+  if(!alvo) return;
+  alvo.innerHTML = receita.map(l => {
+    const f = FARMACOS[l.id];
+    const d = {baixa:'baixa', media:'média', alta:'alta'}[l.dose];
+    return `<div class="cx"><span class="etiqueta">${d}</span>${arte(f.arte, f.nome, 'img')}</div>`;
+  }).join('');
+}
+
+/* ---------- ficha ---------- */
+function pintarFicha(){
+  const c = casoAtual();
+  document.getElementById('ficha-dados').innerHTML =
+    `<dt>Paciente</dt><dd>${c.nome}</dd>` +
+    Object.entries(c.dados).map(([k,v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  document.getElementById('ficha-queixas').innerHTML =
+    c.problemas.map(p => `<span class="sinal" style="border-color:${PROBLEMAS[p].cor};color:${PROBLEMAS[p].cor}">${PROBLEMAS[p].nome}</span>`).join('') +
+    (c.coracao ? '<span class="flag">Problema no coração</span>' : '');
+}
+
+/* ---------- prateleira ---------- */
+function pintarPrateleira(){
+  const liberadas = CLASSES_POR_FASE[casoAtual().fase];
+  const cheia = receita.length >= limite();
+  document.getElementById('titulo-prateleira').innerHTML =
+    `Prateleira <span style="text-transform:none;letter-spacing:0">(${liberadas.length} ${
+      liberadas.length === 1 ? 'classe liberada' : 'classes liberadas'})</span>`;
+  document.getElementById('prateleira').innerHTML = Object.entries(FARMACOS)
+    .filter(([,f]) => liberadas.includes(f.classe))
+    .map(([id,f]) => {
+      const sel = receita.some(l => l.id === id);
+      return `<button class="frasco cl-${f.classe} ${sel?'escolhido':''}" data-id="${id}"
+        ${(!sel && cheia) ? 'disabled' : ''} title="${f.acao}">
+        ${arte(f.arte, f.nome, 'img')}<b>${f.nome}</b><em>${f.rotulo}</em></button>`;
+    }).join('');
+  document.querySelectorAll('.frasco').forEach(b =>
+    b.onclick = () => alternar(b.dataset.id));
+}
+
+function alternar(id){
+  const i = receita.findIndex(l => l.id === id);
+  if(i >= 0) receita.splice(i,1);
+  else if(receita.length < limite())
+    receita.push({id, dose:'media', horario: HORARIO_IDEAL[id] === 'noite' ? 'noite' : 'manha'});
+  pintarPrateleira(); pintarReceita();
+}
+
+/* ---------- receita ---------- */
+function pintarReceita(){
+  document.getElementById('contador-receita').innerHTML =
+    `<span style="text-transform:none;letter-spacing:0;font-weight:400">${receita.length} de ${limite()}</span>`;
+  const alvo = document.getElementById('receita');
+  if(!receita.length){
+    alvo.innerHTML = '<p class="vazio">Toque num frasco da prateleira para montar a receita.</p>';
+  }else{
+    alvo.innerHTML = receita.map((l,i) => {
+      const f = FARMACOS[l.id];
+      const bot = (campo,valor,texto) =>
+        `<button data-i="${i}" data-campo="${campo}" data-valor="${valor}"
+          aria-pressed="${l[campo]===valor}">${texto}</button>`;
+      return `<div class="linha">
+        <div class="nome">${f.nome}<small>${f.rotulo} · ${f.acao}</small></div>
+        <div class="opcoes">${bot('dose','baixa','Baixa')}${bot('dose','media','Média')}${bot('dose','alta','Alta')}</div>
+        <div class="opcoes">${bot('horario','manha','Manhã')}${bot('horario','noite','Noite')}</div>
+        <button class="tirar" data-tirar="${i}" title="Retirar">&times;</button>
+      </div>`;
+    }).join('');
+    alvo.querySelectorAll('[data-campo]').forEach(b => b.onclick = () => {
+      receita[+b.dataset.i][b.dataset.campo] = b.dataset.valor; pintarReceita();
+    });
+    alvo.querySelectorAll('[data-tirar]').forEach(b => b.onclick = () => {
+      receita.splice(+b.dataset.tirar,1); pintarPrateleira(); pintarReceita();
+    });
+  }
+  document.getElementById('servir').disabled = receita.length === 0;
+  pintarBandeja();
+  pintarAvisoComputador();
+}
+
+/* O computador de interações avisa antes de servir. */
+function pintarAvisoComputador(){
+  const alvo = document.getElementById('aviso-computador');
+  if(!temItem('computador') || !receita.length){ alvo.innerHTML = ''; return; }
+  const mortais = vermelhosNaReceita(receita.map(l => l.id));
+  alvo.innerHTML = mortais.length
+    ? `<div class="aviso-pc"><b>Computador:</b> combinação vermelha na receita —
+       ${mortais.map(v => v.titulo).join('; ')}. Não sirva.</div>`
+    : '';
+}
+
+/* ---------- resultado ---------- */
+function servir(){
+  const caso = casoAtual();
+  const r = avaliar(caso, receita, estado);
+  const t = TIERS[r.tier];
+  const ultimo = estado.caso >= CASOS.length - 1;
+
+  if(r.tier === 'obito'){ estado.itens = []; estado.dinheiro = 0; }
+  else estado.dinheiro = Math.max(0, estado.dinheiro + r.dinheiro);
+
+  pintarCena(r.tier); pintarTopo(); salvar();
+
+  const bloco = a => `<div class="achado a-${a.nivel}"><b>${a.titulo}</b>
+    ${a.texto ? `<span>${a.texto}</span>` : ''}
+    <span class="mec">${a.mecanismo}</span></div>`;
+
+  document.getElementById('caixa-resultado').className = 'caixa t-' + r.tier;
+  document.getElementById('caixa-resultado').innerHTML = `
+    <header>${arte(t.selo, 'selo', 'selo')}<h2>${t.titulo}</h2></header>
+    <div class="corpo">
+      <div class="caixa-dinheiro ${r.dinheiro < 0 ? 'neg' : ''}">
+        ${r.tier === 'obito' ? 'GAME OVER' : (r.dinheiro >= 0 ? '+' : '') + 'R$ ' + r.dinheiro}
+        <small>${r.tier === 'obito'
+          ? 'Sua farmácia fechou. Você perdeu o caixa e tudo que comprou, e recomeça no nível 1.'
+          : 'caixa agora: R$ ' + estado.dinheiro}</small>
+      </div>
+      <p style="font-size:.86rem;line-height:1.45"><b>Receita servida:</b> ${
+        receita.map(l => `${FARMACOS[l.id].nome} (dose ${l.dose}, ${l.horario})`).join('; ')}</p>
+      ${r.achados.map(bloco).join('')}
+      <div class="achado" style="border-left-color:var(--ouro)">
+        <b>Para o trabalho</b><span class="mec">${r.licao}</span></div>
+    </div>
+    <footer>
+      ${r.tier === 'obito' || r.tier === 'grave'
+        ? `<button id="r-repetir">${r.tier === 'obito'
+            ? 'Abrir uma farmácia nova' : 'Tentar este caso de novo'}</button>`
+        : (ultimo ? '<button id="r-fim">Ver o fechamento</button>'
+                  : '<button id="r-seguir">Chamar o próximo paciente</button>')}
+      <button class="secundario" id="r-loja">Ir à loja</button>
+    </footer>`;
+
+  document.getElementById('tela-resultado').hidden = false;
+  const liga = (id,fn) => { const e = document.getElementById(id); if(e) e.onclick = fn; };
+  liga('r-repetir', () => { document.getElementById('tela-resultado').hidden = true; iniciarCaso(); });
+  liga('r-seguir',  () => { estado.caso++; salvar();
+    document.getElementById('tela-resultado').hidden = true; iniciarCaso(); });
+  liga('r-fim', mostrarFechamento);
+  liga('r-loja', abrirLoja);
+}
+
+/* ---------- loja ---------- */
+function abrirLoja(){
+  document.getElementById('caixa-loja').innerHTML = `
+    <header><h2>Loja da farmácia</h2></header>
+    <div class="corpo">
+      <p style="font-size:.86rem;color:var(--tinta-fraca);line-height:1.45">
+        Caixa: <b style="color:var(--tinta)">R$ ${estado.dinheiro}</b>.
+        As ferramentas de informação não deixam a receita mais forte: deixam você enxergar o risco
+        antes de servir.</p>
+      <div class="itens">${LOJA.map(it => {
+        const tenho = temItem(it.id), posso = estado.dinheiro >= it.preco;
+        return `<div class="item ${tenho?'comprado':''}">
+          ${arte(it.arte, it.nome, 'img')}
+          <div><b>${it.nome}</b><p>${it.desc}</p></div>
+          <button data-id="${it.id}" ${tenho||!posso?'disabled':''}>
+            ${tenho ? 'Comprado' : 'R$ ' + it.preco}</button></div>`;
+      }).join('')}</div>
+    </div>
+    <footer><button id="l-fechar">Voltar ao balcão</button></footer>`;
+  document.getElementById('tela-loja').hidden = false;
+  document.querySelectorAll('#caixa-loja [data-id]').forEach(b => b.onclick = () => {
+    const it = LOJA.find(x => x.id === b.dataset.id);
+    if(estado.dinheiro < it.preco || temItem(it.id)) return;
+    estado.dinheiro -= it.preco; estado.itens.push(it.id);
+    salvar(); pintarTopo(); pintarCena(); pintarPrateleira(); pintarReceita(); abrirLoja();
+  });
+  document.getElementById('l-fechar').onclick = () => {
+    document.getElementById('tela-loja').hidden = true;
+  };
+}
+
+/* ---------- fechamento ---------- */
+function mostrarFechamento(){
+  document.getElementById('tela-resultado').hidden = true;
+  document.getElementById('caixa-loja').innerHTML = `
+    <header><h2>Fim do expediente</h2></header>
+    <div class="corpo abertura">
+      <h2>${NIVEIS[nivelIndex()].nome}</h2>
+      <p>Você atendeu os ${CASOS.length} casos e fechou o caixa com <b>R$ ${estado.dinheiro}</b>.</p>
+      <p>A conclusão que o jogo defende: com dez fármacos e cinco classes, tratar cinco queixas
+      ao mesmo tempo é possível, mas só com escolha racional dentro de cada classe, dose inicial
+      baixa e acompanhamento. Trocar um fármaco por outro da mesma classe muda completamente
+      o risco da receita.</p>
+    </div>
+    <footer><button id="f-reiniciar">Jogar de novo do começo</button></footer>`;
+  document.getElementById('tela-loja').hidden = false;
+  document.getElementById('f-reiniciar').onclick = () => {
+    estado = {dinheiro:0, itens:[], caso:0}; salvar();
+    document.getElementById('tela-loja').hidden = true; iniciarCaso();
+  };
+}
+
+/* ---------- abertura ---------- */
+function mostrarAbertura(){
+  document.getElementById('corpo-abertura').innerHTML = `
+    <h2>Farmácia: A Dose Certa</h2>
+    <p>Miguel chega ao balcão com uma ficha. Você monta a receita na prateleira e escolhe
+    dose e horário. Acertar enche o caixa; o caixa compra ferramentas que mostram o risco
+    antes de você servir.</p>
+    <ol>
+      <li>Leia a ficha: queixas, idade, rins, coração.</li>
+      <li>Escolha os fármacos que tratam cada queixa — e só esses.</li>
+      <li>Ajuste a dose. Idoso, rim fraco e interação pedem dose baixa.</li>
+      <li>Ajuste o horário: muda o conforto, não a interação.</li>
+      <li>Sirva e leia a explicação de cada ponto da sua receita.</li>
+    </ol>
+    <p style="font-size:.8rem">Simplificação didática para trabalho acadêmico.
+    Não é orientação de tratamento.</p>
+    <button class="servir" id="a-comecar" style="max-width:300px">Abrir a farmácia</button>`;
+  document.getElementById('a-comecar').onclick = () => {
+    document.getElementById('tela-abertura').hidden = true; iniciarCaso();
+  };
+}
+
+/* ---------- laço ---------- */
+function iniciarCaso(){
+  if(estado.caso >= CASOS.length) estado.caso = CASOS.length - 1;
+  receita = [];
+  pintarTopo(); pintarCena(); pintarFicha(); pintarPrateleira(); pintarReceita();
+}
+
+document.getElementById('servir').onclick = servir;
+document.getElementById('abrir-loja').onclick = abrirLoja;
+carregar();
+iniciarCaso();
+mostrarAbertura();
+</script>
+</body>
+</html>
