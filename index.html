@@ -33,6 +33,7 @@
   --c-ansiolitico:#128c7e;
   --c-antidepressivo:#cf8a12;
   --borda:3px solid var(--tinta);
+  --raio:14px;
   --sombra:5px 5px 0 rgba(10,30,28,.35);
   --fonte:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
 }
@@ -48,14 +49,14 @@ body{
   padding:12px;gap:12px;
   -webkit-font-smoothing:antialiased;
 }
-img{image-rendering:pixelated;display:block}
+img{image-rendering:auto;display:block}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 .app{width:100%;max-width:1040px;display:flex;flex-direction:column;gap:12px}
 
 /* ---------- barra superior ---------- */
 .topo{
   background:var(--verde);border:var(--borda);box-shadow:var(--sombra);
-  border-radius:10px;padding:10px 14px;
+  border-radius:var(--raio);padding:10px 14px;
   display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;color:var(--creme);
 }
 .topo h1{font-size:1.05rem;letter-spacing:.04em;text-transform:uppercase;margin-right:auto}
@@ -70,13 +71,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* ---------- cenário ---------- */
 .cena{
-  position:relative;border:var(--borda);border-radius:10px;overflow:hidden;
+  position:relative;border:var(--borda);border-radius:var(--raio);overflow:hidden;
   box-shadow:var(--sombra);background:var(--verde-claro);
-  min-height:190px;display:flex;align-items:flex-end;justify-content:center;
+  aspect-ratio:1040/400;min-height:260px;
 }
 .cena .fundo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.cena .paciente{position:relative;height:170px;z-index:2;margin-bottom:6px}
+.cena .paciente{
+  position:absolute;bottom:18%;left:50%;transform:translateX(-50%);
+  height:66%;width:auto;z-index:2;
+}
 .cena .balcao{position:absolute;bottom:0;left:0;width:100%;z-index:3}
+.paciente.falta-arte{width:120px}
 .falta-arte{
   display:flex;align-items:center;justify-content:center;text-align:center;
   background:repeating-linear-gradient(45deg,#2b2b2b,#2b2b2b 8px,#3a3a3a 8px,#3a3a3a 16px);
@@ -84,11 +89,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   border:2px dashed rgba(255,255,255,.5);
 }
 .bandeja{
-  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  position:absolute;bottom:20%;left:50%;transform:translateX(-50%);
   display:flex;gap:9px;align-items:flex-end;z-index:4;pointer-events:none;
 }
 .bandeja .cx{position:relative;animation:pousar .18s ease-out}
-.bandeja img,.bandeja .falta-arte{width:52px;height:62px;border-radius:3px;
+.bandeja img,.bandeja .falta-arte{width:52px;height:64px;border-radius:6px;object-fit:contain;
   filter:drop-shadow(0 4px 0 rgba(0,0,0,.28))}
 .bandeja .etiqueta{
   position:absolute;top:-16px;left:50%;transform:translateX(-50%);
@@ -104,8 +109,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   box-shadow:3px 3px 0 rgba(0,0,0,.3);line-height:1.35;
 }
 
+@media (max-width:620px){
+  .cena{aspect-ratio:auto;height:300px}
+  .cena .paciente{height:58%;bottom:18%}
+  .bolha{top:8px;font-size:.72rem;padding:6px 10px;max-width:94%;line-height:1.3}
+  .bandeja img,.bandeja .falta-arte{width:42px;height:52px}
+  .bandeja .etiqueta{font-size:.52rem;top:-13px}
+}
+
 /* ---------- cartões ---------- */
-.painel{background:var(--creme);border:var(--borda);border-radius:10px;box-shadow:var(--sombra);padding:14px}
+.painel{background:var(--creme);border:var(--borda);border-radius:var(--raio);box-shadow:var(--sombra);padding:14px}
 .painel > h2{
   font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;color:var(--tinta-fraca);
   border-bottom:2px solid var(--creme-escuro);padding-bottom:6px;margin-bottom:10px;
@@ -132,7 +145,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   box-shadow:3px 3px 0 rgba(0,0,0,.18);transition:transform .08s;position:relative;
 }
 .frasco:active{transform:translate(2px,2px)}
-.frasco .img,.frasco img{width:44px;height:52px;border-radius:4px}
+.frasco .img,.frasco img{width:46px;height:54px;border-radius:6px;object-fit:contain}
 .frasco b{font-size:.74rem;line-height:1.1}
 .frasco em{font-size:.6rem;font-style:normal;text-transform:uppercase;letter-spacing:.04em;
   color:#fff;padding:2px 6px;border-radius:999px;font-weight:800}
@@ -562,6 +575,8 @@ const CLASSES_POR_FASE = {
   4:['pressorico','cardiaco','diuretico','ansiolitico','antidepressivo'],
 };
 const CHAVE_SALVA = 'dose-certa-v1';
+const ROTULO_DOSE = {baixa:'baixa', media:'média', alta:'alta'};
+const ROTULO_HORARIO = {manha:'manhã', noite:'noite'};
 
 let estado = {dinheiro:0, itens:[], caso:0};
 let receita = [];
@@ -622,7 +637,7 @@ function pintarBandeja(){
   if(!alvo) return;
   alvo.innerHTML = receita.map(l => {
     const f = FARMACOS[l.id];
-    const d = {baixa:'baixa', media:'média', alta:'alta'}[l.dose];
+    const d = ROTULO_DOSE[l.dose];
     return `<div class="cx"><span class="etiqueta">${d}</span>${arte(f.arte, f.nome, 'img')}</div>`;
   }).join('');
 }
@@ -735,7 +750,8 @@ function servir(){
           : 'caixa agora: R$ ' + estado.dinheiro}</small>
       </div>
       <p style="font-size:.86rem;line-height:1.45"><b>Receita servida:</b> ${
-        receita.map(l => `${FARMACOS[l.id].nome} (dose ${l.dose}, ${l.horario})`).join('; ')}</p>
+        receita.map(l => `${FARMACOS[l.id].nome} (dose ${ROTULO_DOSE[l.dose]}, ${
+          ROTULO_HORARIO[l.horario]})`).join('; ')}</p>
       ${r.achados.map(bloco).join('')}
       <div class="achado" style="border-left-color:var(--ouro)">
         <b>Para o trabalho</b><span class="mec">${r.licao}</span></div>
