@@ -447,15 +447,18 @@ const CASOS = [
 ];
 
 const LOJA = [
-  { id:'geladeira', nome:'Geladeira de vacinas', preco:120, arte:'loja-geladeira.png',
+  /* Preços calibrados pela renda: os 4 primeiros casos pagam no máximo R$ 500.
+     Prateleira + Atendente (R$ 240) são obrigatórios para a Fórmula Mestra (5 remédios)
+     e cabem mesmo com uma cura parcial no caminho. O resto é escolha: não dá para ter tudo. */
+  { id:'geladeira', nome:'Geladeira de vacinas', preco:50, arte:'loja-geladeira.png',
     desc:'Mais movimento na farmácia: cada cura rende R$ 15 a mais.' },
-  { id:'prateleira', nome:'Prateleira nova', preco:200, arte:'loja-prateleira.png',
+  { id:'prateleira', nome:'Prateleira nova', preco:100, arte:'loja-prateleira.png',
     desc:'Cabe mais remédio no balcão: a receita aceita 1 a mais.' },
-  { id:'computador', nome:'Computador', preco:320, arte:'loja-computador.png',
-    desc:'Avisa na tela quando a receita tem uma combinação vermelha, antes de você servir.' },
-  { id:'atendente', nome:'Atendente', preco:260, arte:'loja-atendente.png',
+  { id:'atendente', nome:'Atendente', preco:140, arte:'loja-atendente.png',
     desc:'Ajuda na conferência: a receita aceita mais 1 remédio.' },
-  { id:'rede', nome:'Virar rede de farmácias', preco:600, arte:'loja-rede.png',
+  { id:'computador', nome:'Computador', preco:150, arte:'loja-computador.png',
+    desc:'Avisa na tela quando a receita tem uma combinação vermelha, antes de você servir.' },
+  { id:'rede', nome:'Virar rede de farmácias', preco:220, arte:'loja-rede.png',
     desc:'Sua farmácia vira uma rede. Todos os prêmios aumentam 25%.' },
 ];
 
@@ -536,7 +539,9 @@ function avaliar(caso, receita, estado){
   else                                          tier = 'cura';
 
   if(tier === 'cura') achados.unshift({nivel:'bom', titulo:'Combinação verde',
-    texto:'Receita exata: tudo tratado, nas doses e nos horários certos.',
+    texto: horarioErrado.length
+      ? 'Remédios e doses certos: tudo tratado. Só o horário deixou o Miguel desconfortável.'
+      : 'Receita exata: tudo tratado, nas doses e nos horários certos.',
     mecanismo:caso.licao});
 
   /* 5. Dinheiro */
@@ -586,7 +591,15 @@ function carregar(){
   try{
     const bruto = localStorage.getItem(CHAVE_SALVA);
     if(bruto){ const s = JSON.parse(bruto);
-      if(typeof s.dinheiro === 'number' && Array.isArray(s.itens)) estado = s; }
+      if(typeof s.dinheiro === 'number' && Array.isArray(s.itens)){
+        if(!Number.isInteger(s.caso) || s.caso < 0) s.caso = 0;
+        /* Caso resolvido antes de recarregar a página: avança em vez de repetir o prêmio. */
+        if(s.pendente){
+          s.pendente = false;
+          if(s.caso < CASOS.length - 1) s.caso++; else s.fim = true;
+        }
+        estado = s;
+      } }
   }catch(e){}
 }
 
@@ -617,8 +630,7 @@ function pintarTopo(){
     `Fase ${casoAtual().fase} <span>· caso ${estado.caso+1} de ${CASOS.length}</span>`;
 }
 
-function pintarCena(expressao){
-  const c = casoAtual();
+function pintarCena(expressao, c = casoAtual()){
   const nivel = nivelIndex()+1;
   document.getElementById('cena').innerHTML =
     arte(`bg-nivel${nivel}.png`, `bg-nivel${nivel}.png`, 'fundo') +
@@ -730,10 +742,17 @@ function servir(){
   const t = TIERS[r.tier];
   const ultimo = estado.caso >= CASOS.length - 1;
 
-  if(r.tier === 'obito'){ estado.itens = []; estado.dinheiro = 0; }
-  else estado.dinheiro = Math.max(0, estado.dinheiro + r.dinheiro);
+  /* Game over: farmácia nova, do zero, a partir do caso 1.
+     Sem isso o jogador caía na Fórmula Mestra sem caixa para comprar
+     as vagas de receita (precisa de 5) e o jogo ficava impossível. */
+  if(r.tier === 'obito'){ estado = {dinheiro:0, itens:[], caso:0}; }
+  else{
+    estado.dinheiro = Math.max(0, estado.dinheiro + r.dinheiro);
+    /* Cura ou parcial liberam o próximo caso já no salvamento. */
+    if(r.tier === 'cura' || r.tier === 'parcial') estado.pendente = true;
+  }
 
-  pintarCena(r.tier); pintarTopo(); salvar();
+  pintarCena(r.tier, caso); pintarTopo(); salvar();
 
   const bloco = a => `<div class="achado a-${a.nivel}"><b>${a.titulo}</b>
     ${a.texto ? `<span>${a.texto}</span>` : ''}
@@ -746,7 +765,7 @@ function servir(){
       <div class="caixa-dinheiro ${r.dinheiro < 0 ? 'neg' : ''}">
         ${r.tier === 'obito' ? 'GAME OVER' : (r.dinheiro >= 0 ? '+' : '') + 'R$ ' + r.dinheiro}
         <small>${r.tier === 'obito'
-          ? 'Sua farmácia fechou. Você perdeu o caixa e tudo que comprou, e recomeça no nível 1.'
+          ? 'Sua farmácia fechou. Você perdeu o caixa e tudo que comprou, e recomeça do caso 1.'
           : 'caixa agora: R$ ' + estado.dinheiro}</small>
       </div>
       <p style="font-size:.86rem;line-height:1.45"><b>Receita servida:</b> ${
@@ -768,9 +787,9 @@ function servir(){
   document.getElementById('tela-resultado').hidden = false;
   const liga = (id,fn) => { const e = document.getElementById(id); if(e) e.onclick = fn; };
   liga('r-repetir', () => { document.getElementById('tela-resultado').hidden = true; iniciarCaso(); });
-  liga('r-seguir',  () => { estado.caso++; salvar();
+  liga('r-seguir',  () => { estado.caso++; estado.pendente = false; salvar();
     document.getElementById('tela-resultado').hidden = true; iniciarCaso(); });
-  liga('r-fim', mostrarFechamento);
+  liga('r-fim', () => { estado.pendente = false; estado.fim = true; salvar(); mostrarFechamento(); });
   liga('r-loja', abrirLoja);
 }
 
@@ -859,7 +878,8 @@ document.getElementById('servir').onclick = servir;
 document.getElementById('abrir-loja').onclick = abrirLoja;
 carregar();
 iniciarCaso();
-mostrarAbertura();
+if(estado.fim){ document.getElementById('tela-abertura').hidden = true; mostrarFechamento(); }
+else mostrarAbertura();
 </script>
 </body>
 </html>
